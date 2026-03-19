@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Drop Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-wrapper">
+    <h1 class="game-title">Water Drop</h1>
+    <!--p class="game-tagline">Catch the good drops, avoid the bad ones!</p-->
+    <div class="game-wrapper">
+      <div id="game-container">
+          <div id="game-overlay">
+            <h2>Catch the <span class="good-txt">good</span> drops,<br/>avoid the <span class="bad-txt">bad</span> ones!<br/>
+                Click "Start Game" to play!</h2>
+          </div>
+        </div>
+        <div id="side-panel">
+        <div class="data-row">
+          <div class="data-placement">
+            <div class="data-field"><span id="score">0</span></div>
+            SCORE
+          </div>
+        </div>
+        <div class="data-row">
+          <div class="data-placement">
+            <div class="data-field"><span id="combo">0</span></div>
+            COMBO
+          </div>
+          <div class="data-placement">
+            <div class="data-field"><span id="purity">100</span>%</div>
+            PURITY
+          </div>
+        </div>
+        <div class="data-row" id="brand-space">
+          <!-- TODO: Insert charity: water branding here -->
+        </div>
+
+        <div class="data-row no-mobile">
+            <button id="music-toggle">Music: On</button>
+            <button id="sound-toggle">Sound: On</button>
+        </div>
+        
+        <button id="pause-btn" class="no-mobile">Pause Game</button>
+        <button id="start-btn" class="no-mobile">Start Game</button>
+        <button id="about-btn" class="no-mobile" onclick="window.open('https://www.charitywater.org/', '_blank')">About <b>charity: water</b></button>
+
+        <div class="button-grid mobile">
+          <button id="music-toggle-mb">Music</button>
+          <button id="sound-toggle-mb">Sound</button>
+          <button id="pause-btn-mb">Pause</button>
+          <button id="start-btn-mb">Start</button>
+          <button id="about-btn-mb" onclick="window.open('https://www.charitywater.org/', '_blank')">?</button>
+        </div>
+        
+      </div>
+      <!--div class="score-panel">
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="timer">Time: <span id="time">30</span>s</div>
+        <button id="start-btn">Start Game</button>
+      </div-->
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
