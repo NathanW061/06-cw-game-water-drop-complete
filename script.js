@@ -135,6 +135,27 @@ let gameHTML = {
     }
   },
 
+  // Message
+  game_message: document.getElementById("game-message"),
+  msg_timeout: null,
+  showMessage: function(message)
+  {
+    this.game_message.textContent = message;
+    if(this.game_message.classList.contains("display"))
+    {
+      this.game_message.classList.remove("display"); // Restart animation if already active
+      void this.game_message.offsetWidth; // Force reflow to allow animation restart
+    }
+    this.game_message.classList.add("display");
+    
+    // Reset timeout for message display class removal
+    if(this.msg_timeout != null)
+      clearTimeout(this.msg_timeout);
+    this.msg_timeout = setTimeout(() => {
+      this.game_message.classList.remove("display");
+    }, 2000);
+  },
+
   // Drops
   dropMaker: null,
 
@@ -231,6 +252,7 @@ let gameState = {
   drop_time_base: 2,
   drop_time_offset: 2,
   drop_impure_chance: 0.6,
+  combo_max: 9,
 
   currentState: "new",
   active: false, // Keeps track of whether game is active or not
@@ -252,7 +274,7 @@ let gameState = {
     if(newState != "credits")
       gameHTML.setOverlayState("credits", false);
 
-    if(this.currentState == "paused")
+    if(newState != "paused")
     {
       gameHTML.setOverlayState("pause", false);
       gameHTML.btn_pause.setText("Pause Game", "pause");
@@ -274,6 +296,7 @@ let gameState = {
         gameHTML.clearDrops();
         gameHTML.setOverlayState("start", false);
 
+        this.scoreMsgCounter = 0;
         this.update_value("score", 0);
         this.update_value("combo", 0);
         this.update_value("purity", 100);
@@ -324,18 +347,54 @@ let gameState = {
       this.changeState("playing");
   },
 
+  scoreMsgCounter: 0,
   collectPureDroplet: function(pts)
   {
     let ptsToAdd = pts * (this.combo + 1);
     this.update_value("score", this.score + ptsToAdd);
+    switch(this.scoreMsgCounter)
+    {
+      case 0:
+        if(this.score >= 500)
+        {
+          gameHTML.showMessage("Keep it up!");
+          this.scoreMsgCounter++;
+        }
+        break;
+      case 1:
+        if(this.score >= 1000)
+        {
+          gameHTML.showMessage("Great job!");
+          this.scoreMsgCounter++;
+        }
+        break;
+      case 2:
+        if(this.score >= 2000)
+        {
+          gameHTML.showMessage("Amazing!");
+          this.scoreMsgCounter++;
+        }
+        break;
+      default:
+        if(this.score >= 2000 * (this.scoreMsgCounter - 2))
+        {
+          gameHTML.showMessage("Awesome!");
+          this.scoreMsgCounter++;
+        }
+        break;
+    }
 
-    if(this.combo < 9)
+    if(this.combo < this.combo_max)
     {
       this.update_value("combo", this.combo + 1);
+      if(this.combo == this.combo_max)
+        gameHTML.showMessage("Combo Max!");
     }
     if(this.purity < 100)
     {
       this.update_value("purity", this.purity + this.pure_purity_bonus);
+      if(this.purity >= 100)
+        gameHTML.showMessage("Purity Restored!");
     }
   },
 
@@ -344,6 +403,8 @@ let gameState = {
     if(this.combo != 0)
     {
       this.update_value("combo", 0);
+      if(this.combo >= 5)
+        gameHTML.showMessage("Combo Broken!");
     }
 
     this.update_value("purity", Math.max(0, this.purity - this.impure_purity_penalty));
@@ -353,6 +414,8 @@ let gameState = {
     {
       gameState.changeState("gameover");
     }
+    else if(gameState.purity >= 0 && gameState.purity <= 20)
+      gameHTML.showMessage("Watch out!");
   }
 };
 
@@ -372,7 +435,8 @@ function startGame(difficulty)
         gameState.pure_purity_bonus = 2;
         gameState.drop_time_base = 4;
         gameState.drop_time_offset = 0.5;
-        gameState.drop_impure_chance = 0.1;
+        gameState.drop_impure_chance = 0.3;
+        gameState.combo_max = 20;
       break;
 
     case "medium":
@@ -383,6 +447,7 @@ function startGame(difficulty)
       gameState.drop_time_base = 2;
       gameState.drop_time_offset = 2;
       gameState.drop_impure_chance = 0.5;
+      gameState.combo_max = 10;
       break;
 
     case "hard":
@@ -393,6 +458,7 @@ function startGame(difficulty)
       gameState.drop_time_base = 0.75;
       gameState.drop_time_offset = 1.5;
       gameState.drop_impure_chance = 0.75;
+      gameState.combo_max = 5;
       break;
   }
 
