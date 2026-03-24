@@ -24,6 +24,7 @@
 
   --start-overlay-display: flex;
   --pause-overlay-display: none;
+  --credits-overlay-display: none;
 }
 
 * {
@@ -138,6 +139,16 @@ button:disabled {
   display: var(--pause-overlay-display);
 }
 
+#credits-overlay {
+  display: var(--credits-overlay-display);
+  
+  font-size: 0.8em;
+  font-weight: normal;
+  a {
+    color: white
+  }
+}
+
 .water-drop {
     position: absolute;
     width: 60px;  /* increased from 40px */
@@ -212,11 +223,10 @@ button:disabled {
 
 .logo {
   object-fit: contain;
-  width: 50%;
+  width: 40%;
+  padding: 16px 0px;
   margin-left: auto;
   margin-right: auto;
-  margin-top: auto;
-  margin-bottom: auto;
 }
 
 .data-placement {
@@ -336,7 +346,8 @@ button:disabled {
 
       img {
         width: 16px;
-        padding-top: 4px;
+        padding: 0px;
+        padding-top: 2px;
       }
     }
   }

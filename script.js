@@ -13,6 +13,25 @@ function defineControl(id)
       this.onMobile.addEventListener(event, handler);
     },
 
+    setEnabled: function(enabled)
+    {
+      console.log(this.main.id);
+
+      this.main.disabled = !enabled;
+      this.onMobile.disabled = !enabled;
+
+      //if(enabled)
+      //{
+      //  this.main.removeAttribute("disabled");
+      //  this.onMobile.removeAttribute("disabled");
+      //}
+      //else
+      //{
+      //  this.main.setAttribute("disabled", true);
+      //  this.onMobile.setAttribute("disabled", true);
+      //}
+    },
+
     setAttribute: function(attr, value)
     {
       this.main.setAttribute(attr, value);
@@ -30,6 +49,54 @@ function defineControl(id)
 // Object used to manage the HTML and CSS side of the game
 let gameHTML = {
 
+  // Audio
+  music: new Audio("audio/lobby_time.mp3", { loop: true }),
+  musicEnabled: true,
+  enableMusic: function(enabled)
+  {
+    if(enabled)
+    {
+      this.music.muted = false;
+      //this.music.play();
+      this.btn_music.setText("Music: On", "music_note");
+    }
+    else
+    {
+      this.music.muted = true;
+      //this.music.pause();
+      this.btn_music.setText("Music: Off", "music_off");
+    }
+
+    this.musicEnabled = enabled;
+  },
+
+  sounds: {
+    pop: new Audio("audio/260614__kwahmah_02__pop.wav"),
+
+    play: function(soundName)
+    {
+      if(gameHTML.soundEnabled)
+      {
+        this[soundName].currentTime = 0; // Rewind to allow quick retriggering
+        this[soundName].play();
+      }
+    }
+  },
+  soundEnabled: true,
+  enableSound: function(enabled)
+  {
+    if(enabled)
+    {
+      this.btn_sound.setText("Sound: On", "brand_awareness");
+    }
+    else
+    {
+      this.btn_sound.setText("Sound: Off", "volume_mute");
+    }
+
+    this.soundEnabled = enabled;
+  },
+
   // HTML span references
   span_score: document.getElementById("score"),
   span_combo: document.getElementById("combo"),
@@ -43,16 +110,21 @@ let gameHTML = {
   // UI Buttons
   btn_restart: defineControl("restart-btn"),
   btn_pause: defineControl("pause-btn"),
+  btn_credits: defineControl("credits-btn"),
+
+  btn_music: defineControl("music-toggle"),
+  btn_sound: defineControl("sound-toggle"),
 
   enableGameControlButtons: function(enabled)
   {
-    this.btn_restart.setAttribute("disabled", enabled);
-    this.btn_pause.setAttribute("disabled", enabled);
+    this.btn_restart.setEnabled(enabled);
+    this.btn_pause.setEnabled(enabled);
   },
 
   // Overlays
   overlay_start: document.getElementById("start-game-overlay"),
   overlay_pause: document.getElementById("pause-overlay"),
+  overlay_credits: document.getElementById("credits-overlay"),
 
   setOverlayState: function(overlayName, visible, newMessage)
   {
@@ -98,7 +170,7 @@ let gameHTML = {
     drop.style.left = xPosition + "px";
 
     // Make drops fall for 2-4 seconds
-    const dropDuration = gameState.drop_time_base + (Math.random() * (gameState.drop_time_offset - gameState.drop_time_base));
+    const dropDuration = gameState.drop_time_base + (Math.random() * gameState.drop_time_offset);
     drop.style.animationDuration = dropDuration + "s";
 
     // Add the new drop to the game screen
@@ -110,6 +182,7 @@ let gameHTML = {
         return;
 
       drop.remove();
+      gameHTML.sounds.play("pop");
       if(drop.classList.contains("impure"))
       {
         gameState.collectImpureDroplet();
@@ -174,7 +247,10 @@ let gameState = {
       return;
 
     // State-exclusive changes
-    gameHTML.enableGameControlButtons(newState == "new");
+    gameHTML.enableGameControlButtons(newState != "new");
+
+    if(newState != "credits")
+      gameHTML.setOverlayState("credits", false);
 
     if(this.currentState == "paused")
     {
@@ -186,23 +262,29 @@ let gameState = {
     switch(newState)
     {
       case "new":
+        if(this.currentState == "playing")
+          gameHTML.setDropMaker(false);
+        
         gameHTML.setOverlayState("start", true);
+        gameHTML.btn_credits.setEnabled(true);
         this.active = false;
         break;
         
       case "started":
         gameHTML.clearDrops();
+        gameHTML.setOverlayState("start", false);
 
         this.update_value("score", 0);
         this.update_value("combo", 0);
         this.update_value("purity", 100);
+        gameHTML.btn_credits.setEnabled(false);
         break;
           
       case "playing":
         gameHTML.setOverlayState("pause", false);
         gameHTML.setDropMaker(true, this.spawn_rate);
         gameHTML.setDropMovement(true);
-
+        
         this.active = true;
         break;
 
@@ -210,7 +292,6 @@ let gameState = {
         gameHTML.setOverlayState("pause", true, "Paused");
         gameHTML.setDropMaker(false);
         gameHTML.setDropMovement(false);
-
         gameHTML.btn_pause.setText("Resume Game", "play_arrow");
         break;
 
@@ -218,7 +299,20 @@ let gameState = {
         gameHTML.setOverlayState("pause", true, "Game Over");
         gameHTML.setDropMaker(false);
 
-        gameHTML.pauseButton.setAttribute("disabled", true);
+        gameHTML.btn_pause.setEnabled(false);
+        gameHTML.btn_credits.setEnabled(true);
+        this.active = false;
+        break;
+
+      case "credits":
+        gameHTML.setOverlayState("pause", false);
+        gameHTML.setOverlayState("credits", true);
+        gameHTML.setOverlayState("start", false);
+        gameHTML.setDropMaker(false);
+
+        gameHTML.btn_restart.setEnabled(true);
+        gameHTML.btn_pause.setEnabled(false);
+        gameHTML.btn_credits.setEnabled(false);
         this.active = false;
         break;
     }
@@ -272,34 +366,38 @@ function startGame(difficulty)
   switch(difficulty)
   {
     case "easy":
-        gameState.spawn_rate = 1200;
+        gameState.spawn_rate = 800;
         gameState.impure_purity_penalty = 6;
         gameState.impure_score_penalty = 1;
         gameState.pure_purity_bonus = 2;
         gameState.drop_time_base = 4;
         gameState.drop_time_offset = 0.5;
+        gameState.drop_impure_chance = 0.1;
       break;
 
     case "medium":
-      gameState.spawn_rate = 1000;
+      gameState.spawn_rate = 600;
       gameState.impure_purity_penalty = 12;
       gameState.impure_score_penalty = 5;
       gameState.pure_purity_bonus = 1;
       gameState.drop_time_base = 2;
       gameState.drop_time_offset = 2;
+      gameState.drop_impure_chance = 0.5;
       break;
 
     case "hard":
-      gameState.spawn_rate = 600;
+      gameState.spawn_rate = 400;
       gameState.impure_purity_penalty = 20;
       gameState.impure_score_penalty = 10;
       gameState.pure_purity_bonus = 0;
-      gameState.drop_time_base = 1.5;
+      gameState.drop_time_base = 0.75;
       gameState.drop_time_offset = 1.5;
+      gameState.drop_impure_chance = 0.75;
       break;
   }
 
   gameState.changeState("started");
+  gameHTML.music.play();
 }
 
 // Allow player to restart game
@@ -312,21 +410,16 @@ function pauseGame() {
   gameState.changeState(gameState.currentState == "paused" ? "playing" : "paused");
 }
 
-//let restartButton = document.getElementById("restart-btn");
-//let restartButtonMb = document.getElementById("restart-btn-mb");
-//restartButton.addEventListener("click", resetGame);
-//restartButtonMb.addEventListener("click", resetGame);
-//
-//let pauseButton = document.getElementById("pause-btn");
-//let pauseButtonMb = document.getElementById("pause-btn-mb");
-//
-//
-//
-//
-//
-//pauseButton.addEventListener("click", pauseGame);
-//pauseButtonMb.addEventListener("click", pauseGame);
-//
-//
-//
-//
+// Allow player to click button to view credits
+gameHTML.btn_credits.addEventListener("click", () => gameState.changeState("credits"));
+
+// Allow player to toggle music
+gameHTML.btn_music.addEventListener("click", () => gameHTML.enableMusic(!gameHTML.musicEnabled));
+
+// Allow player to toggle sound effects
+gameHTML.btn_sound.addEventListener("click", () => gameHTML.enableSound(!gameHTML.soundEnabled));
+
+gameHTML.music.onloadeddata = function() {
+  gameHTML.enableMusic(true);
+  
+};
